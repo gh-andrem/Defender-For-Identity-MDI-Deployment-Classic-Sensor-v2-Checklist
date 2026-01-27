@@ -1,5 +1,5 @@
 # Introduction
-This document describes the steps to onboard Microsoft Defender for Identity.
+This document describes the (manual) steps involved to onboard servers to Microsoft Defender for Identity using the v2 (classic sensor). It is intended to be used as a checklist.
 
 # Microsoft Defender for Identity (MDI)
 Microsoft Defender for Identity (abbreviated MDI, formerly known as Azure Advanced Threat Protection [Azure ATP]) is a cloud-based security solution that leverages on-premises Active Directory signals to identify, detect, and investigate advanced threats, compromised identities, and malicious insider actions directed at your organization.
@@ -12,7 +12,7 @@ Defender for Identity detects advanced attacks in hybrid environments to:
 
 The MDI sensor can be installed on domain controllers, ADFS, ADCS and Entra Connect servers.
 
-![image](images/img-architecture.png)
+![image](images/img-1.png)
 _Figure 1: Defender for Identity architecture_
 
 **Sources**
@@ -31,125 +31,81 @@ Supported Windows Server OS (core and GUI)
 - Min. 6GB disk space
 - Minimum .NET Framework 4.7 installed
 
-| ![image](images/image_002.png) | **Sources **<br/> |
-| --- | --- |
+**Sources**
+- [Microsoft Defender for Identity prerequisites | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/prerequisites)
 
 ### Defender for Identity Classic vs Unified Sensor
+![image](images/img-2.png)
+_Figure 2: Defender for Identity Sensor Comparison Chart_
 
-![image](images/image_004.png)
+**Decision**
 
-| ![image](images/image_002.png) | **Decision**<br/>The Classic Sensor (v2) was installed on all non-Domain Controllers (ADFS, ADCS, Entra Connect). The Unified Sensor (v3) was activated on all Domain Controllers. |
-| --- | --- |
+Decide if you want to install the classic sensor (v2) or unified sensor (v3) on domain controllers. You can also mix and match in your environment, e.g. installing the classic sensor on some domain controllers and activate the unified sensor on the other DCs.
+As of 1/27/2026 non-domain controllers (ADFS, ADCS, Entra Connect) can only be covered by the classic sensor.
+
 
 ### Defender for Identity PowerShell Module
-
-It might be useful to utilize the MDI PowerShell module instead of manually configuring the settings during deployment. 
-
-If the configuration setting is supported by the PS module it will speed up your deployment and also minimize errors while manually configuring these settings.
+It might be useful to utilize the MDI PowerShell module instead of manually configuring the settings during deployment. If the configuration setting is supported by the PS module it will speed up your deployment and also minimize errors while manually configuring these settings.
 
 The specific cmdlets are mentioned at each configuration step.
 
 To install the module run the following commands:
 
+```
 Install-Module DefenderForIdentity
-
 Import-Module DefenderForIdentity
+```
+To update the module:
 
-# To update module
-
+```
 Update-Module DefenderForIdentity
+```
 
-Link: 
+**Sources**
+- [Defender for Identity PowerShell module | Microsoft Docs](https://learn.microsoft.com/en-us/powershell/defenderforidentity/overview-defenderforidentity?view=defenderforidentity-latest)
 
 ### Checklist – Prerequisites – Server OS
 
- 	Run MDI sizing tool on one domain controller in (each) domain for 24 hours
-
-Link: 
-
-Command to run: TriSizingTool.exe -UseCurrent=ComputerDomain (optional: -AlsoEnumerateAD)
-
- 	Check “Azure ATP Summary” tab in created Excel spreadsheet and increase CPU, RAM
-
-and/or HDD for each server accordingly
-
-		Is the latest version of Windows Server OS installed?
-
-	Set **Power Option** to **High Performance**** **on all servers where MDI will be deployed
-
-**GUI**: Start > Control Panel > Power Options > Select a power plan > *Select* Change settings that are currently unavailable > *Choose* High Performance
-
-**Command** (as admin): powercfg.exe /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
-
-**GPO**: Policies > Administrative Templates > System > Power Management > Select an active power plan > High Performance
-
-**MDI PS** cmdlet
-
-Set-MDIConfiguration -Mode Domain -Configuration ProcessorPerformance
-
-	Verify that servers have at least 10GB of disk space for MDI sensor
-
-	Verify that .NET 4.7 Framework is installed on every server (MDI sensor will 
-
-install required version automatically) REBOOT required (if installation is needed)
-
-Get-ItemPropertyValue -LiteralPath 'HKLM:SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full' -Name Release
-
-	If servers are virtualized ensure that memory is allocated to VMs at all times
-
-Link: 
-
-	If servers are virtualized (**VMWare only**) disable TCP Segmentation Offload
-
-(TSO) for IPv4 May require REBOOT and causes brief LOSS of network connectivity
-
-*Get-**NetAdapterAdvancedProperty** | Where-Object DisplayName -Match "^Large*"*
-
-Link: 
+- [ ] Run MDI sizing tool on one domain controller in (each) domain for 24 hours
+  - [Download MDI Sizing Tool](https://aka.ms/mdi/sizingtool)
+- [ ] Command to run: TriSizingTool.exe -UseCurrent=ComputerDomain (optional: -AlsoEnumerateAD)
+- [ ] Check “Azure ATP Summary” tab in created Excel spreadsheet and increase CPU, RAM and/or HDD for each server accordingly
+- [ ] Is the latest version of Windows Server OS installed?
+- [ ] Set **Power Option** to **High Performance**** **on all servers where MDI will be deployed
+  - **GUI**: Start > Control Panel > Power Options > Select a power plan > *Select* Change settings that are currently unavailable > *Choose* High Performance
+  - **Command** (as admin): powercfg.exe /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+  - **GPO**: Policies > Administrative Templates > System > Power Management > Select an active power plan > High Performance
+  - **MDI PS** cmdlet: `Set-MDIConfiguration -Mode Domain -Configuration ProcessorPerformance`
+- [ ] Verify that servers have at least 10GB of disk space for MDI sensor
+- [ ] Verify that .NET 4.7 Framework is installed on every server (MDI sensor will install required version automatically) **REBOOT** required (if installation is needed)
+  - `Get-ItemPropertyValue -LiteralPath 'HKLM:SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full' -Name Release`
+  - [.NET Release version overview | Microsoft Docs](https://learn.microsoft.com/en-us/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed#minimum-version)
+- [ ] If servers are virtualized ensure that memory is allocated to VMs at all times
+  - [Plan capacity for Microsoft Defender for Identity deployment - Dynamic memory | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/prerequisites#dynamic-memory-requirements)
+- [ ] If servers are virtualized (**VMWare only**) disable TCP Segmentation Offload (TSO) for IPv4 May require **REBOOT** and causes brief **LOSS** of network connectivity
+  - `*Get-**NetAdapterAdvancedProperty** | Where-Object DisplayName -Match "^Large*"*`
+  - [VMware virtual machine sensor issue | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/troubleshooting-known-issues#vmware-virtual-machine-sensor-issue)
 
 ## Network, Proxy and Ports
 
 ### Checklist – Prerequisites – Network Connectivity
 
- 	Create MDI instance in Defender XDR portal (Settings > Identities) and copy workspace
-
-name (Settings > Identities > About)
-
- 	Is a proxy required to access the internet?
-
-GUI:
-
-- Start > Control Panel > Internet Options > Connections > LAN settings
-
-- Note configuration – either Automatic configuration/AutoConfigURL or Proxy Server/ProxyServer
-
-Link: 
-
- 	Either use proxy or allow URL from first step on all servers where MDI sensor will be
-
-deployed https://WORKSPACE-NAMEsensorapi.atp.azure.com
-
- 	Load URL https://WORKSPACE-NAMEsensorapi.atp.azure.com/tri/sensor/api/ping
-
-In browser:
-
-- Result: Should show string with numbers, e.g. “2.240.18316.65180”
-
-PowerShell:
-
-- Invoke-Webrequest -UseBasicParsing https://INSTANCE-NAMEsensorapi.atp.azure.com/tri/sensor/api/ping #-Proxy http://PROXYURL
-
-- OR
-
-- wget -UseBasicParsing https:/INSTANCE-NAMEsensorapi.atp.azure.com/tri/sensor/api/ping | % {$_.StatusCode}
-
-- Result: Command should return 200 (or Error 503)
-
-Check certificate: If invalid: 
-
- 	Confirm that required ports are open 
-
-	Link: 
+- [ ] Create MDI instance in Defender XDR portal (Settings > Identities) and copy workspace name (Settings > Identities > About)
+- [ ] Is a proxy required to access the internet?
+	- Start > Control Panel > Internet Options > Connections > LAN settings
+	- Note configuration – either Automatic configuration/AutoConfigURL or Proxy Server/ProxyServer
+	- Link: 
+- [ ] Either use proxy or allow URL from first step on all servers where MDI sensor will be deployed https://WORKSPACE-NAMEsensorapi.atp.azure.com
+- [ ] Load URL https://WORKSPACE-NAMEsensorapi.atp.azure.com/tri/sensor/api/ping
+  - In browser: Should show string with numbers, e.g. “2.240.18316.65180”
+  - PowerShell/cmd:
+    - `Invoke-Webrequest -UseBasicParsing https://INSTANCE-NAMEsensorapi.atp.azure.com/tri/sensor/api/ping #-Proxy http://PROXYURL` or
+    - `wget -UseBasicParsing https:/INSTANCE-NAMEsensorapi.atp.azure.com/tri/sensor/api/ping | % {$_.StatusCode}`
+    - Result: Either command should return 200 (or Error 503)
+- [ ] Check certificate: If invalid: 
+  - [ ] Link: 
+- [ ] Confirm that required ports are open
+  - [ ] Link: 
 
 ## Directory Service Account
 
