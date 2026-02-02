@@ -51,13 +51,13 @@ The specific cmdlets are mentioned at each configuration step.
 
 To install the module run the following commands:
 
-```
+```PowerShell
 Install-Module DefenderForIdentity
 Import-Module DefenderForIdentity
 ```
 To update the module:
 
-```
+```PowerShell
 Update-Module DefenderForIdentity
 ```
 
@@ -102,44 +102,56 @@ Update-Module DefenderForIdentity
     - `Invoke-Webrequest -UseBasicParsing https://INSTANCE-NAMEsensorapi.atp.azure.com/tri/sensor/api/ping #-Proxy http://PROXYURL` or
     - `wget -UseBasicParsing https:/INSTANCE-NAMEsensorapi.atp.azure.com/tri/sensor/api/ping | % {$_.StatusCode}`
     - Result: Either command should return 200 (or Error 503)
-- [ ] Check certificate: If invalid: 
-  - [ ] Link: 
-- [ ] Confirm that required ports are open
-  - [ ] Link: 
+- [ ] Check certificate. If invalid:
+  - [Proxy authentication problem | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/troubleshooting-known-issues#proxy-authentication-problem-presents-as-a-connection-error)
+- [ ] Confirm that required ports are open. This step can also be disregarded before rolling out MDI. If a sensor is unable to access specific ports (e.g. for NNR) a sensor health alert be surfaced.
+  - [Required ports | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/prerequisites-sensor-version-2#required-ports)
 
 ## Directory Service Account
 
- 	Check if KDS root key exists: *Get-**KDSRootKey*
+- [ ] Check if KDS root key exists: *Get-**KDSRootKey*
+- [ ] If not, create via Add-KdsRootKey -EffectiveImmediately and wait 24 hours for synchronization between domain controllers
+- [ ] Create a universal AD security group and add all domain controllers (and ADFS/ADCS/Entra Connect) as members
+  - AD FS: Add only federation servers (web application proxy servers [WAP] not required) and dedicated SQL server (if AD FS database does not run on local AD FS server)
+  - AD CS: Add only online ADCS servers (not required for offline servers)
+  - Entra Connect: Add both active and staging servers
+- [ ] Create gMSA following your naming convention
 
- 	If not, create via Add-KdsRootKey -EffectiveImmediately and wait 24 hours for 
+```PowerShell
+Import-Module ActiveDirectory
+$gMSA_AccountName = 'gmsa-mdi'
+$gMSA_HostsGroup = Get-ADGroup '[NAME OF YOUR GROUP CREATED ABOVE]'
 
-synchronization between domain controllers
+# Create gMSA
+New-ADServiceAccount -Name $gMSA_AccountName -DNSHostName "$gMSA_AccountName.$env:USERDNSDOMAIN" -PrincipalsAllowedToRetrieveManagedPassword $gMSA_HostsGroup.Name -KerberosEncryptionType AES256 #–ManagedPasswordIntervalInDays 30
+```
 
- 	Create a universal AD security group and add all domain controllers (and ADFS/ADCS/Entra Connect) as members
+- [ ] Declare read access (change gMSA name in last line, if necessary)
 
-- AD FS: Add only federation servers (web application proxy servers [WAP] not required) and dedicated SQL server (if AD FS database does not run on local AD FS server)
-
-- AD CS: Add only online ADCS servers (not required for offline servers)
-
-- Entra Connect: Add both active and staging servers
-
- 	Create gMSA following your naming convention
-
+```PowerShell
+# Take ownership on deleted objects container
+dsacls "CN=Deleted Objects,$((Get-ADDomain).DistinguishedName)" /takeownership
  
+# Grant 'List Contents' and 'Read Property' permissions to gMSA:
+dsacls "CN=Deleted Objects,$((Get-ADDomain).DistinguishedName)" /g "$((Get-ADDomain).NetBIOSName)\gmsa-mdi`$:LCRP" # ` needs to be kept in gMSA
+```
 
- 	Declare read access (change gMSA name in last line, if necessary)
+- [ ] Repeat above steps to create more gMSAs in each domain that have not a full trust established with each other (if applicable)
+- [ ] A reboot of all computer objects that were added to the above universal security group will be necessary. Otherwise, the next step will return false.
+- [ ] Install and test gMSA
 
- 	Repeat above steps to create more gMSAs in each domain that have not a full trust
+```PowerShell
+Import-Module ActiveDirectory
+Install-ADServiceAccount -Identity 'gmsa-mdi’
+Test-ADServiceAccount -Identity 'gmsa-mdi’ # Should return true
+```
 
-established with each other
+- [ ] Optional: See properties of gMSA
 
- 	A reboot of all computer objects that were added to the above universal security group
-
-	will be necessary. Otherwise, the next step will return false.
-
- 	Install and test gMSA
-
- 	Optional: See properties of gMSA
+```PowerShell
+Get-ADServiceAccount gmsa-mdi -Properties * | fl
+Get-ADServiceAccount gmsa-mdi -Properties * | fl DNSHostName, SamAccountName, KerberosEncryptionType, ManagedPasswordIntervalInDays, PrincipalsAllowedToRetrieveManagedPassword
+```
 
 ## Event Logging
 
