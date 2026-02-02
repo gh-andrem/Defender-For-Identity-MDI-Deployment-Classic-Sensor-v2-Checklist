@@ -154,256 +154,175 @@ Get-ADServiceAccount gmsa-mdi -Properties * | fl DNSHostName, SamAccountName, Ke
 ```
 
 ## Event Logging
-
 ### Checklist – Event Logging
 
- 	Run gpresult /h C:\temp\mdi-gpo-result.html (adjust path and file name accordingly) OR use rsop.msc (run both as administrator) on DC and other server (ADFS, ADCS, Entra Connect – if applicable). 
+- [ ] Run gpresult /h C:\temp\mdi-gpo-result.html (adjust path and file name accordingly) OR use rsop.msc (run both as administrator) on DC and other server (ADFS, ADCS, Entra Connect – if applicable). 
 
-Use created HTML with GPOs (or evaluate RSOP) to determine if the following policies are already
-
-configured through existing GPOs.
-
-If policies are configured, confirm if settings are set correctly. If not, set them according to documentation (see links below for each section),
-
-If policies are not configured, create dedicated GPO and set them according to documentation.
+Use created HTML with GPOs (or evaluate RSOP) to determine if the following policies are already configured through existing GPOs.
+- If policies are configured, confirm if settings are set correctly. If not, set them according to the documentation (see links below for each section),
+- If policies are not configured, create dedicated GPO and set them according to the documentation.
 
 #### Event Log Service
 
-In rare circumstances security events (in security event log) are not allowed to be overwritten. This means that the events will eventually hit the maximum event log size and trigger the CrashOnAuditFail safety feature (). Once this is set up only administrators are allowed to log into a domain controller.
+In rare circumstances security events (in security event log) are not allowed to be overwritten. This means that the events will eventually hit the maximum event log size and trigger the CrashOnAuditFail safety feature ([CrashOnAuditFail | Microsoft Docs](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-2000-server/cc963220(v=technet.10))). Once this is set up only administrators are able (and allowed) to log into a domain controller. This can cause severe outages.
 
-For more information about this feature, the cause, effects and solution visit 
+For more information about this feature, the cause, effects and solution visit [Users cannot access Web sites when the security event log is full | Microsoft Docs](https://learn.microsoft.com/en-us/troubleshoot/developer/webapps/iis/health-diagnostic-performance/users-cannot-access-web-sites-when-log-full).
 
 This feature might cause issues in your environment (especially domain controllers) as the MDI sensors will increase the amount of security events.
 
 Check the security event log properties on domain controllers to evaluate if this might affect your environment.
 
- 	Open Event Viewer > Security > Properties
+- [ ] Open Event Viewer > Security > Properties
+- [ ] Verify which setting is currently enabled (“When maximum event log size is reached:”)
 
- 	Verify which setting is currently enabled (“When maximum event log size is reached:”)
+![image](images/img-3.png)
 
-![image](images/image_011.png)
+_Figure 3: Security Log Properties_
 
 If “**Archive the log when full, do not overwrite events**” or “**Do not overwrite events (clear logs manually)**” is selected, then the likelihood that the CrashOnAuditFail feature will block non-administrators to log in is high once MDI is deployed.
 
 To change (or confirm) check the following policies under **Computer Configuration > Administrative Templates > Windows Components > Event Log Service > Security**
 
-Back up log automatically when full
-
-Control Event Log behavior when the log file reaches its maximum size
+- Back up log automatically when full
+- Control Event Log behavior when the log file reaches its maximum size
 
 See the following table to determine if your domain controllers might be susceptible to CrashOnAuditFail.
 
-![image](images/image_005.png)
+![image](images/img-4.png)
 
-#### Policies for **domain controllers and other servers where MDI will be installed (ADFS, ADCS****, Entra Connect****)**
+_Figure 4: Summary of CrashOnAuditFail options_
 
- 	**Log on as a service**
+#### Policies for **domain controllers and other servers where MDI will be installed (ADFS, ADCS, Entra Connect)**
 
-Policies > Windows Settings > Security Settings > Local Policies > User Rights Assignment
-
-**Default**: Local security policy (NT SERVICE\ALL SERVICES)
-
-If enabled, add gMSA(s) (see ) to policy
-
-ATTENTION
-
-- User Rights Assignment GPO will overwrite locally made changes, e.g. Entra Connect connector account will be overwritten by GPO.
-
-- Get current Entra Connect connector account via Get-ADSyncADConnectorAccount and add to GPO targeting Entra Connect servers. NT SERVICE\ALL SERVICES covers NT SERVICE\ADSync if the Microsoft Azure AD Sync service is running with that account.
-
-- Ideally NT SERVICE\ALL SERVICES should be added to GPO, if not already added. Simply type NT SERVICE\ALL SERVICES in the user and group names box (don’t click browse!)
-
-- Consider configuring this setting on ADFS, ADCS and Entra Connect via local group policy (“edit group policy”).
-
-Link: 
+- [ ] **Log on as a service**
+  - Policies > Windows Settings > Security Settings > Local Policies > User Rights Assignment
+  - **Default**: Local security policy (NT SERVICE\ALL SERVICES)
+  - If enabled, add gMSA(s) (created above) to policy
+  - **ATTENTION**
+    - User Rights Assignment GPO will overwrite locally made changes, e.g. Entra Connect connector account will be overwritten by GPO.
+      - Get current Entra Connect connector account via Get-ADSyncADConnectorAccount and add to GPO targeting Entra Connect servers. NT SERVICE\ALL SERVICES covers NT SERVICE\ADSync if the Microsoft Azure AD Sync service is running with that account.
+    - Ideally NT SERVICE\ALL SERVICES should be added to GPO, if not already added. Simply type NT SERVICE\ALL SERVICES in the user and group names box (don’t click browse!)
+    - Consider configuring this setting on ADFS, ADCS and Entra Connect via local group policy (“edit group policy”).
+  - [Log on as a service | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/create-directory-service-account-gmsa#verify-that-the-gmsa-account-has-the-required-rights)
 
 #### Policies for **domain controllers**
 
- 	**Advanced Audit Policies**
+- [ ] **Advanced Audit Policies**
+  - **ATTENTION**
+    - Setting Advanced Audit Policies will **overwrite** legacy audit policies (Policies > Windows Settings > Security Settings > Local Policies > Audit Policy) and you will not be able to switch back. **This could break on-premises solutions that rely on specific event IDs!**
+   - Before making any changes output all events currently being logged via `auditpol /get /category:*`
+   - Then consider migrating them over from Local Policies > Audit Policy to Advanced Audit Policies.
+  - There might be problems with configuring the Advanced Audit Policies manually through GPO, e.g. they won’t apply to the domain controllers. Either configure these settings in the `Default Domain Controllers` policy or use the MDI PowerShell cmdlet (apply to DCs after creation) - `Set-MDIConfiguration -Mode Domain -Configuration AdvancedAuditPolicyDCs -CreateGpoDisabled`
+  - To create the GPO manually follow the next steps:
+  - Policies > Windows Settings > Security Settings > Advanced Audit Policy Configuration > Audit Policies
+  - Select **Success** and **Failure **for following categories
+    - Account Logon > Audit Credential Validation
+    - Account Management > Audit Computer Account Management
+    - Account Management > Audit Distribution Group Management
+    - Account Management > Audit Security Group Management
+    - Account Management > Audit User Account Management
+    - DS Access > Audit Directory Service Access
+    - DS Access > Audit Directory Service Changes
+    - System > Audit Security System Extension
+  - [Configure Directory Services Advanced Auditing | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/configure-windows-event-collection#configure-directory-services-advanced-auditing)
 
-ATTENTION
-
-- Setting Advanced Audit Policies will **overwrite** legacy audit policies (Policies > Windows Settings > Security Settings > Local Policies > Audit Policy) and you will not be able to switch back. **This could break on-premises solutions that rely on specific event IDs!**
-
-- Before making any changes output all events currently being logged via
-
-- auditpol /get /category:*
-
-- Then consider migrating them over from Local Policies > Audit Policy to Advanced Audit Policies.
-
-There might be problems with configuring the Advanced Audit Policies manually through GPO, e.g. they won’t apply to the domain controllers. Either configure these settings to the default domain controllers policy or use the MDI PowerShell cmdlet (apply to DCs after creation):
-
-Set-MDIConfiguration -Mode Domain -Configuration AdvancedAuditPolicyDCs -CreateGpoDisabled
-
-To create the GPO manually follow the next steps:
-
-Policies > Windows Settings > Security Settings > Advanced Audit Policy Configuration > Audit Policies
-
-Select **Success** and **Failure **for following categories
-
-- Account Logon > Audit Credential Validation
-
-- Account Management > Audit Computer Account Management
-
-- Account Management > Audit Distribution Group Management
-
-- Account Management > Audit Security Group Management
-
-- Account Management > Audit User Account Management
-
-- DS Access > Audit Directory Service Access
-
-- DS Access > Audit Directory Service Changes
-
-- System > Audit Security System Extension
-
-Link: 
-
- 	**Event ID 8004 (NTLM)**
-
-MDI PS cmdlet
-
-Set-MDIConfiguration -Mode Domain -Configuration NTLMAuditing -CreateGpoDisabled
-
-To create the GPO manually follow the next steps:
-
-Policies > Windows Settings > Security Settings > Local Policies > Security Options
-
-Configure following policies:
-
-- Network security: Restrict NTLM: Outgoing NTLM traffic to remote servers > **Audit all**
-
-- Network security: Restrict NTLM: Audit NTLM authentication in this domain > **Enable all**
-
-- Network security: Restrict NTLM: Audit Incoming NTLM Traffic > **Enable auditing for all accounts**
-
-Link: 
+- [ ] **Event ID 8004 (NTLM)**
+  - MDI PS cmdlet: `Set-MDIConfiguration -Mode Domain -Configuration NTLMAuditing -CreateGpoDisabled`
+  - To create the GPO manually follow the next steps:
+  - Policies > Windows Settings > Security Settings > Local Policies > Security Options
+  - Configure following policies:
+    - Network security: Restrict NTLM: Outgoing NTLM traffic to remote servers > **Audit all**
+    - Network security: Restrict NTLM: Audit NTLM authentication in this domain > **Enable all**
+    - Network security: Restrict NTLM: Audit Incoming NTLM Traffic > **Enable auditing for all accounts**
+  - [Configure NTLM auditing | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/configure-windows-event-collection#configure-ntlm-auditing)
 
 #### Policies for Active Directory Federation Services (AD FS) servers
+-- > **Only configure the below policies on a server OS that has the Active Directory Federation Services (AD FS) role installed!** <--
 
-Only configure the below policies on a server OS that has the Active Directory Federation Services (AD FS) role installed!
+- [ ] **Configure Verbose logging for AD FS events**
+  - Only run on primary server of the AD FS farm
 
- 	**Configure Verbose logging for AD FS events**
+```PowerShell
+# Get current AuditLevel on AD FS server (Basic = default)
+Get-AdfsProperties | select AuditLevel
 
-Only run on primary server of the AD FS farm
+# Set AuditLevel to Verbose
+Set-AdfsProperties -AuditLevel Verbose
+```
+  - [Configure Verbose logging for AD FS events | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/configure-windows-event-collection#configure-verbose-logging-for-ad-fs-events)
 
-- # Get current AuditLevel on AD FS server (Basic = default) Get-AdfsProperties | select AuditLevel  # Set AuditLevel to Verbose Set-AdfsProperties -AuditLevel Verbose
+- [ ] **Configure read permissions for the AD FS database**
+  - Applies read (db_datareader) permissions for the gMSA(s)
+  - Apply the steps below on all AD FS servers in your environment since database permissions are not replicated across servers.
+  - If AD FS database is located on dedicated SQL server, add SQL server to AD security group that can access the gMSA (see ).
+  - To acquire SQL connection string (if not known already) to locate the name of the AD FS database open PowerShell
+    - [Acquire the SQL database connection string | Microsoft Docs](https://learn.microsoft.com/en-us/windows-server/identity/ad-fs/troubleshooting/ad-fs-tshoot-sql#acquire-the-sql-database-connection-string)
+```PowerShell
+$adfs = gwmi -Namespace root/ADFS -Class SecurityTokenService
+$adfs.ConfigurationDatabaseConnectionString
+```
 
-Link: 
+  - Grant sensor access to AD FS database using PowerShell (run as administrator)
+    - Adjust the below code to your environment
+    - [**DOMAIN1\gmsa-mdi$**] - the directory services account of the workspace, e.g. [YOURDOMAIN\gmsa-mdi$]” (**don’t forget the dollar sign at the end of the gMSA**)
+    - **AdfsConfigurationV4** - the name of the AD FS database (see connection string from previous step)
+    - **server=.\pipe\MICROSOFT##WID\tsql\query** - the connection string to the database if you are using WID
+  - [Grant access to the AD FS database | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/active-directory-federation-services#grant-access-to-the-ad-fs-database)
 
-- 
-
- 	**Configure read permissions for the AD FS database**
-
-Applies read (db_datareader) permissions for the gMSA(s)
-
-Apply the steps below on all AD FS servers in your environment since database permissions are not replicated across servers.
-
-If AD FS database is located on dedicated SQL server, add SQL server to AD security group that can access the gMSA (see ).
-
-To acquire SQL connection string (if not known already) to locate the name of the AD FS database open PowerShell
-
-- $adfs = gwmi -Namespace root/ADFS -Class SecurityTokenService
-
-- $adfs.ConfigurationDatabaseConnectionString
-
-- Link:
-
-Grant sensor access to AD FS database using PowerShell
-
-- Adjust the below code to your environment
-
-- [**DOMAIN1\****gmsa****-mdi**] - the directory services account of the workspace, e.g. [YOURDOMAIN\gmsa-mdi$]” (**don’t forget the dollar sign at the end of the ****gMSA**)
-
-- **AdfsConfigurationV4** - the name of the AD FS database (see connection string from previous step)
-
-- **server****=.\pipe\MICROSOFT****##WID\****tsql****\query** - the connection string to the database if you are using WID
-
-$ConnectionString = 'server=\\.\pipe\MICROSOFT##WID\tsql\query;database=**AdfsConfigurationV****4**;trusted_connection=true;'
-
+```PowerShell
+$ConnectionString = 'server=\\.\pipe\MICROSOFT##WID\tsql\query;database=AdfsConfigurationV4;trusted_connection=true;'
 $SQLConnection= New-Object System.Data.SQLClient.SQLConnection($ConnectionString)
-
 $SQLConnection.Open()
-
 $SQLCommand = $SQLConnection.CreateCommand()
-
 $SQLCommand.CommandText = @"
-
 USE [master]; 
-
-CREATE LOGIN [**DOMAIN1\****gmsa****-mdi**] FROM WINDOWS WITH DEFAULT_DATABASE=[master];
-
-USE [**AdfsConfigurationV4**]; 
-
-CREATE USER [**DOMAIN1\****gmsa****-mdi**] FOR LOGIN [**DOMAIN1\****gmsa****-mdi**]; 
-
-ALTER ROLE [db_datareader] ADD MEMBER [**DOMAIN1\****gmsa****-mdi**]; 
-
-GRANT CONNECT TO [**DOMAIN1\****gmsa****-mdi**]; 
-
-GRANT SELECT TO [**DOMAIN1\****gmsa****-mdi**];
-
+CREATE LOGIN [DOMAIN1\gmsa-mdi$] FROM WINDOWS WITH DEFAULT_DATABASE=[master];
+USE [AdfsConfigurationV4]; 
+CREATE USER [DOMAIN1\gmsa-mdi$] FOR LOGIN [DOMAIN1\gmsa-mdi$]; 
+ALTER ROLE [db_datareader] ADD MEMBER [DOMAIN1\gmsa-mdi$]; 
+GRANT CONNECT TO [DOMAIN1\gmsa-mdi$]; 
+GRANT SELECT TO [DOMAIN1\gmsa-mdi$];
 "@
-
 $SqlDataReader = $SQLCommand.ExecuteReader()
-
 $SQLConnection.Close()
-
-- 
-
-Link: 
+```
 
 #### Policies for Active Directory Certificate Services (AD CS) servers
+-- > **Only configure the below policies on a server OS that has the Active Directory Certificate Services (AD CS) role installed!** <--
 
-Only configure the below policies on a server OS that has the Active Directory Certificate Services (AD CS) role installed!
+- [ ] **Audit Certification Services**
+  - **ATTENTION**
+    - Setting Advanced Audit Policies will **overwrite** legacy audit policies (Policies > Windows Settings > Security Settings > Local Policies > Audit Policy) and you will not be able to switch back. **This could break on-premises solutions that rely on specific event IDs!**
+    - Before making any changes output all events currently being logged via `auditpol /get /category:*`
+    - Then consider migrating them over from Local Policies > Audit Policy to Advanced Audit Policies.
+  - MDI PS cmdlet: `Set-MDIConfiguration -Mode Domain -Configuration AdvancedAuditPolicyCAs -CreateGpoDisabled`
+  - To create the GPO manually follow the next steps:
+  - Create separate GPO for AD CS server(s), if not configured in GPO already.
+  - Policies > Windows Settings > Security Settings > Advanced Audit Policy Configuration > Audit Policies > Object Access > Audit Certification Services
+    - Select Success and Failure
 
- 	**Audit Certification Services**
+- [ ] **Configure CA auditing (either via command line or GUI)**
+  - Check if CA\AuditFilter value is already set to value 127 (or 7f): `Certutil -getreg CA\AuditFilter`
+  - If value is not set to 127 check your ADCS database size as enabling `Start and Stop Active Directory Certificate Services` might cause restart delays
+    - Default path for the ADCS database (.edb): %SystemRoot%\System32\CertLog
 
-ATTENTION
+![image](images/img-5.png)
 
-- Setting Advanced Audit Policies will **overwrite** legacy audit policies (Policies > Windows Settings > Security Settings > Local Policies > Audit Policy) and you will not be able to switch back. **This could break on-premises solutions that rely on specific event IDs!**
+_Figure 5: Note for logging Start and Stop Active Directory Certificate Services_
 
-- Before making any changes output all events currently being logged via
+  - To enable auditing all events (= set AuditFilter to value 127) use one of the following methods
+  - Commandline (as admin)
+```
+certutil –setreg CA\AuditFilter 127
+net stop certsvc && net start certsvc`
+```
 
-- auditpol /get /category:*
+  - GUI
+    - Start > Certification Authority (MMC) > Right-click CA > Properties > Auditing > Select all events > Apply
 
-- Then consider migrating them over from Local Policies > Audit Policy to Advanced Audit Policies.
+  - [Configure auditing on AD CS | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/configure-windows-event-collection#configure-auditing-on-ad-cs)
 
-MDI PS cmdlet
 
-Set-MDIConfiguration -Mode Domain -Configuration AdvancedAuditPolicyCAs -CreateGpoDisabled
-
-To create the GPO manually follow the next steps:
-
-- Create separate GPO for AD CS server(s), if not configured in GPO already.
-
-- Policies > Windows Settings > Security Settings > Advanced Audit Policy Configuration > Audit Policies > Object Access > Audit Certification Services
-
-- Select Success and Failure
-
-- 
-
- 	**Configure CA auditing (either via command line or GUI)**
-
-Check if CA\AuditFilter value is already set to value 127 (or 7f).
-
-Certutil -getreg CA\AuditFilter
-
-If value is not set to 127 choose one of the following options
-
-![image](images/image_007.png)
-
-- Default path for the ADCS database (.edb): %SystemRoot%\System32\CertLog
-
-- Command (as admin)
-
-certutil –setreg CA\AuditFilter 127 net stop certsvc && net start certsvc
-
-- GUI
-
-- Start > Certification Authority (MMC) > Right-click CA > Properties > Auditing > Select all events > Apply
-
-Link: 
 
 #### Policy for Entra Connect servers
 
