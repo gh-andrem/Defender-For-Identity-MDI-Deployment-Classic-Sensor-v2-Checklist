@@ -115,15 +115,37 @@ Update-Module DefenderForIdentity
   - AD FS: Add only federation servers (web application proxy servers [WAP] not required) and dedicated SQL server (if AD FS database does not run on local AD FS server)
   - AD CS: Add only online ADCS servers (not required for offline servers)
   - Entra Connect: Add both active and staging servers
-- [ ] Create gMSA following your naming convention
+- [ ] Create gMSA following your naming convention - choose one of the following options to create the gMSA and give access to specific ressources that can manage the gMSA's password
 
+**Option 1** - Create gMSA with access for one security group
 ```PowerShell
 Import-Module ActiveDirectory
 $gMSA_AccountName = 'gmsa-mdi'
-$gMSA_HostsGroup = Get-ADGroup '[NAME OF YOUR GROUP CREATED ABOVE]'
+$gMSA_HostsGroup = Get-ADGroup 'NAME OF YOUR GROUP CREATED ABOVE'
 
 # Create gMSA
-New-ADServiceAccount -Name $gMSA_AccountName -DNSHostName "$gMSA_AccountName.$env:USERDNSDOMAIN" -PrincipalsAllowedToRetrieveManagedPassword $gMSA_HostsGroup.Name -KerberosEncryptionType AES256 #–ManagedPasswordIntervalInDays 30
+New-ADServiceAccount -Name $gMSA_AccountName -DNSHostName "$gMSA_AccountName.$env:USERDNSDOMAIN" -PrincipalsAllowedToRetrieveManagedPassword $gMSA_HostsGroup.Name -KerberosEncryptionType AES256 # –ManagedPasswordIntervalInDays 30
+```
+
+**Option 2** - Create gMSA with access for only domain controllers
+```PowerShell
+Import-Module ActiveDirectory
+$gMSA_AccountName = 'gmsa-mdi'
+$gMSA_HostsGroup = (Get-ADGroup -Identity 'Domain Controllers').Name # for German OS use 'Domänencontroller'
+
+# Create gMSA
+New-ADServiceAccount -Name $gMSA_AccountName -DNSHostName "$gMSA_AccountName.$env:USERDNSDOMAIN" -PrincipalsAllowedToRetrieveManagedPassword $gMSA_HostsGroup –KerberosEncryptionType AES256 # –ManagedPasswordIntervalInDays 30
+```
+
+**Option 3** - Create gMSA with access for domain controllers and security group
+```PowerShell
+Import-Module ActiveDirectory
+$gMSA_AccountName = 'gmsa-mdi-2'
+$gMSA_HostsGroupA = (Get-ADGroup -Identity 'Domain Controllers').Name # for German OS use 'Domänencontroller'
+$gMSA_HostsGroupB = (Get-ADGroup -Identity 'NAME OF YOUR GROUP CREATED ABOVE').Name # Change name of hosts group
+
+# Create gMSA
+New-ADServiceAccount -Name $gMSA_AccountName -DNSHostName "$gMSA_AccountName.$env:USERDNSDOMAIN" -PrincipalsAllowedToRetrieveManagedPassword "$gMSA_HostsGroupA","$gMSA_HostsGroupB" –KerberosEncryptionType AES256 # –ManagedPasswordIntervalInDays 30
 ```
 
 - [ ] Declare read access (change gMSA name in last line, if necessary)
@@ -207,15 +229,15 @@ _Figure 4: Summary of CrashOnAuditFail options_
 
 #### Policies for **domain controllers**
 
-- [ ] **Advanced Audit Policies**
+- [ ] **Advanced Auditing Policies**
   - **ATTENTION**
     - Setting Advanced Audit Policies will **overwrite** legacy audit policies (Policies > Windows Settings > Security Settings > Local Policies > Audit Policy) and you will not be able to switch back. **This could break on-premises solutions that rely on specific event IDs!**
-   - Before making any changes output all events currently being logged via `auditpol /get /category:*`
-   - Then consider migrating them over from Local Policies > Audit Policy to Advanced Audit Policies.
+    - Before making any changes output all events currently being logged via `auditpol /get /category:*`
+    - Then consider migrating them over from Local Policies > Audit Policy to Advanced Audit Policies.
   - There might be problems with configuring the Advanced Audit Policies manually through GPO, e.g. they won’t apply to the domain controllers. Either configure these settings in the `Default Domain Controllers` policy or use the MDI PowerShell cmdlet (apply to DCs after creation) - `Set-MDIConfiguration -Mode Domain -Configuration AdvancedAuditPolicyDCs -CreateGpoDisabled`
   - To create the GPO manually follow the next steps:
   - Policies > Windows Settings > Security Settings > Advanced Audit Policy Configuration > Audit Policies
-  - Select **Success** and **Failure **for following categories
+  - Select **Success** and **Failure** for following categories
     - Account Logon > Audit Credential Validation
     - Account Management > Audit Computer Account Management
     - Account Management > Audit Distribution Group Management
@@ -322,45 +344,25 @@ net stop certsvc && net start certsvc`
 
   - [Configure auditing on AD CS | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/configure-windows-event-collection#configure-auditing-on-ad-cs)
 
-
-
 #### Policy for Entra Connect servers
+-- > **Only configure the below setting on an Entra Connect server (active and staging)!** <--
 
-Only configure the below setting on an Entra Connect server (active and staging)!
+- [ ] **Advanced Auditing Policies**
+  - **ATTENTION**
+    - Setting Advanced Audit Policies will **overwrite** legacy audit policies (Policies > Windows Settings > Security Settings > Local Policies > Audit Policy) and you will not be able to switch back. **This could break on-premises solutions that rely on specific event IDs!**
+    - Before making any changes output all events currently being logged via `auditpol /get /category:*`
+    - Then consider migrating them over from Local Policies > Audit Policy to Advanced Audit Policies.
+  - There might be problems with configuring the Advanced Audit Policies manually through GPO, e.g. they won’t apply to the domain controllers. Either configure these settings in the `Default Domain Controllers` policy or use the MDI PowerShell cmdlet (apply to DCs after creation) - `Set-MDIConfiguration -Mode Domain -Configuration EntraConnectAuditing -CreateGpoDisabled`
+  - To create the GPO manually follow the next steps:
+  - Create a separate GPO for Entra Connect server(s), if not configured in GPO already.
+  - Policies > Windows Settings > Security Settings > Advanced Audit Policy Configuration > Audit Policies
+  - Select **Success** and **Failure** for the following category
+    - Logon/Logoff > Audit Logon
+  - [Configure auditing on Microsoft Entra Connect | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/configure-windows-event-collection#configure-auditing-on-microsoft-entra-connect)
 
- 	**Advanced Auditing Policy**
-
-ATTENTION
-
-- Setting Advanced Audit Policies will **overwrite** legacy audit policies (Policies > Windows Settings > Security Settings > Local Policies > Audit Policy) and you will not be able to switch back. **This could break on-premises solutions that rely on specific event IDs****!**
-
-- Before making any changes output all events currently being logged via
-
-- auditpol /get /category:*
-
-- Then consider migrating them over from Local Policies > Audit Policy to Advanced Audit Policies.
-
-MDI PS cmdlet
-
-As of 9/2/2024 the Set-MDIConfiguration PowerShell commandlet hasn’t been updated for configuring this setting.
-
-To create the GPO manually follow the next steps:
-
-- Create separate GPO for Entra Connect server(s), if not configured in GPO already.
-
-- Policies > Windows Settings > Security Settings > Advanced Audit Policy Configuration > Audit Policies > Logon/Logoff > Audit Logon
-
-- Select Success and Failure
-
-Link: 
-
- 	**Configure read permissions for the Entra Connect (****ADSync****) database**
-
-The following steps only apply if the Entra Connect database is hosted on an external SQL server instance.
-
-Grant the sensor permissions to the SQL database by following the steps at 
-
-- 
+- [ ]  **Configure read permissions for the Entra Connect (ADSync) database**
+  - The following steps only apply if the Entra Connect database is hosted on an external SQL server instance.
+  - Grant the sensor permissions to the SQL database by following the steps at [Configure permissions for the Microsoft Entra Connect (ADSync) database | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/active-directory-federation-services#configure-permissions-for-the-microsoft-entra-connect-adsync-database)
 
 #### Existing policy to forward security event log
 
@@ -368,32 +370,23 @@ The MDI Sensor (AATPSensor) service needs access to the Windows Security event l
 
 Assess if the Security event log is being forwarded by checking the following policy.
 
- 	**Configure log access**
-
-Computer Configuration > Administrative Templates > Windows Components > Event Log Service > Security > **Configure log access** or **Configure log access (legacy)**
-
-**Default**: Not enabled
-
-If policy **is enabled** run command *wevtutil** **gl** security *(as admin) and backup output (see Figure 2).
-
-In policy append *(**A;;**0x**1;;;**S-1-5-80-818380073-2995186456-1411405591-3990468014-3617507088)* to the existing values (this is the SID of the AATPSensor service).
-
-Confirm with command *wevtutil** **gl** security* (run as admin) that SID was added (under channelAccess, see Figure 3).
-
-Link:  
-
-- 
-
-- 
+- [ ]  **Configure log access**
+  - Computer Configuration > Administrative Templates > Windows Components > Event Log Service > Security > **Configure log access** or **Configure log access (legacy)**
+  - **Default**: Not enabled
+  - If the policy **is enabled** run command `wevtutil gl security` (as admin) and backup the output (see figure 6).
+  - In the policy append `(A;;0x1;;;S-1-5-80-818380073-2995186456-1411405591-3990468014-3617507088)` to the existing values (this is the SID of the AATPSensor service).
+  - Confirm with command `wevtutil gl security` (as admin) that the SID was added (under channelAccess, see figure 7).
+  - [Sensor fails to enumerate event logs | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/troubleshooting-known-issues#sensor-fails-to-enumerate-event-logs)
 
 **Examples**
 
-![image](images/image_009.png)
+![image](images/img-6.png)
 
-![image](images/image_012.png)
-Figure 2 MDI Sensor - Security Event Log Access (before)
+_Figure 6: MDI Sensor - Security Event Log Access (before)_
 
-  Figure 3 MDI Sensor - Security Event Log Access (after)
+![image](images/img-7.png)
+
+_Figure 7: MDI Sensor - Security Event Log Access (after)_
 
 ### Checklist – Auditing
 
