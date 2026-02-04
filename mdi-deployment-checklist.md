@@ -506,9 +506,9 @@ _Figure 7: MDI Sensor - Security Event Log Access (after)_
 ```
 nslookup
 server [YOUR-DC-NAME].[YOUR-DOMAIN] (example: server DC1.domain.local)
-ls -d domain.local (example: ls -d domain.local)
+ls -d YOUR.DOMAIN (example: ls -d domain.local)
 ```
-- [ ] **Result**: The following message should be displayed: *Can’t list domain [domain** name**]: Query refused*
+- [ ] **Result**: The following message should be displayed: *Can’t list domain [domain name]: Query refused*
 
 ![image](images/img-8.png)
 
