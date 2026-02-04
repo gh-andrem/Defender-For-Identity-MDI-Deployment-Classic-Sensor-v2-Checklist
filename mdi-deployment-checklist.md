@@ -508,7 +508,10 @@ nslookup
 server [YOUR-DC-NAME].[YOUR-DOMAIN] (example: server DC1.domain.local)
 ls -d YOUR.DOMAIN (example: ls -d domain.local)
 ```
-- [ ] **Result**: The following message should be displayed: *Can’t list domain [domain name]: Query refused*
+- [ ] **Result**
+  - The following message should be displayed: *Can’t list domain [domain name]: Query refused*
+  - An alert should be created in Defender XDR with Defender for Identity as source *Network mapping reconnaissance (DNS)*
+    - It could be possible that no alert is being triggered as some activities have a learning period of 7-30 days. 
 
 ![image](images/img-8.png)
 
@@ -524,10 +527,13 @@ net group /domain
 net group "Domain Admins" /domain
 net group "Enterprise Admins" /domain
 ```
-- [ ] **Result**: Should enumerate domain users, domain groups, Domain Admins and Enterprise Admins 
+- [ ] **Result**
+  - Should enumerate domain users, domain groups, Domain Admins and Enterprise Admins
+  - An alert should be created in Defender XDR with Defender for Identity or EDR as source *Anomalous account lookups*
+    - It could be possible that no alert is being triggered as some activities have a learning period of 7-30 days. 
 
 ## Data exfiltration over SMB
-- [ ] Download PsTools ()
+- [ ] Download PsTools
 - [ ] Run on Windows Client OS joined to domain
 - [ ] Open command prompt (run as domain admin) 
 - [ ] Enter following commands
@@ -544,4 +550,6 @@ vssadmin delete shadows /shadow={SHADOW ID}
 // Verify last digit in output (HarddiskVolumeShadowCopyX) and add to next command
 copy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopyX\windows\ntds\ntds.dit C:\temp\ntds.dit
 ```
-- [ ] **Result**: NTDS.dit should be copied to temporary folder. Multiple alerts should be created in Defender XDR portal, e.g. Suspicious Service launched (PSEXESVC), Suspicious credentials dump from NTDS.dit (if MDE is deployed on server)
+- [ ] **Result**
+  - NTDS.dit should be copied to temporary folder.
+  - Multiple alerts should be created in Defender XDR portal, e.g. Suspicious Service launched (PSEXESVC), Suspicious credentials dump from NTDS.dit (if MDE is deployed on server)
