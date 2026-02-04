@@ -19,6 +19,8 @@ _Figure 1: Defender for Identity architecture_
 - [What is Microsoft Defender for Identity? | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/what-is)
 - [Microsoft Defender for Identity architecture | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/architecture)
 
+---
+
 # Prerequisites
 ## Server OS
 Supported Windows Server OS (core and GUI)
@@ -43,6 +45,7 @@ _Figure 2: Defender for Identity Sensor Comparison Chart_
 Decide if you want to install the classic sensor (v2) or unified sensor (v3) on domain controllers. You can also mix and match in your environment, e.g. installing the classic sensor on some domain controllers and activate the unified sensor on the other DCs.
 As of 1/27/2026 non-domain controllers (ADFS, ADCS, Entra Connect) can only be covered by the classic sensor.
 
+---
 
 ### Defender for Identity PowerShell Module
 It might be useful to utilize the MDI PowerShell module instead of manually configuring the settings during deployment. If the configuration setting is supported by the PS module it will speed up your deployment and also minimize errors while manually configuring these settings.
@@ -63,6 +66,8 @@ Update-Module DefenderForIdentity
 
 **Sources**
 - [Defender for Identity PowerShell module | Microsoft Docs](https://learn.microsoft.com/en-us/powershell/defenderforidentity/overview-defenderforidentity?view=defenderforidentity-latest)
+
+---
 
 ### Checklist – Prerequisites – Server OS
 
@@ -214,6 +219,8 @@ See the following table to determine if your domain controllers might be suscept
 
 _Figure 4: Summary of CrashOnAuditFail options_
 
+---
+
 #### Policies for **domain controllers and other servers where MDI will be installed (ADFS, ADCS, Entra Connect)**
 
 - [ ] **Log on as a service**
@@ -226,6 +233,8 @@ _Figure 4: Summary of CrashOnAuditFail options_
     - Ideally NT SERVICE\ALL SERVICES should be added to GPO, if not already added. Simply type NT SERVICE\ALL SERVICES in the user and group names box (don’t click browse!)
     - Consider configuring this setting on ADFS, ADCS and Entra Connect via local group policy (“edit group policy”).
   - [Log on as a service | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/create-directory-service-account-gmsa#verify-that-the-gmsa-account-has-the-required-rights)
+
+---
 
 #### Policies for **domain controllers**
 
@@ -257,6 +266,8 @@ _Figure 4: Summary of CrashOnAuditFail options_
     - Network security: Restrict NTLM: Audit NTLM authentication in this domain > **Enable all**
     - Network security: Restrict NTLM: Audit Incoming NTLM Traffic > **Enable auditing for all accounts**
   - [Configure NTLM auditing | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/configure-windows-event-collection#configure-ntlm-auditing)
+
+---
 
 #### Policies for Active Directory Federation Services (AD FS) servers
 -- > **Only configure the below policies on a server OS that has the Active Directory Federation Services (AD FS) role installed!** <--
@@ -309,6 +320,8 @@ $SqlDataReader = $SQLCommand.ExecuteReader()
 $SQLConnection.Close()
 ```
 
+---
+
 #### Policies for Active Directory Certificate Services (AD CS) servers
 -- > **Only configure the below policies on a server OS that has the Active Directory Certificate Services (AD CS) role installed!** <--
 
@@ -344,6 +357,8 @@ net stop certsvc && net start certsvc`
 
   - [Configure auditing on AD CS | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/configure-windows-event-collection#configure-auditing-on-ad-cs)
 
+---
+
 #### Policy for Entra Connect servers
 -- > **Only configure the below setting on an Entra Connect server (active and staging)!** <--
 
@@ -363,6 +378,8 @@ net stop certsvc && net start certsvc`
 - [ ] **Configure read permissions for the Entra Connect (ADSync) database**
   - The following steps only apply if the Entra Connect database is hosted on an external SQL server instance.
   - Grant the sensor permissions to the SQL database by following the steps at [Configure permissions for the Microsoft Entra Connect (ADSync) database | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/active-directory-federation-services#configure-permissions-for-the-microsoft-entra-connect-adsync-database)
+
+---
 
 #### Existing policy to forward security event log
 
@@ -387,6 +404,8 @@ _Figure 6: MDI Sensor - Security Event Log Access (before)_
 ![image](images/img-7.png)
 
 _Figure 7: MDI Sensor - Security Event Log Access (after)_
+
+---
 
 ### Checklist – Auditing
 
@@ -413,6 +432,8 @@ _Figure 7: MDI Sensor - Security Event Log Access (after)_
     - Uncheck *Read permissions*
   - [Configure domain object auditing | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/configure-windows-event-collection#configure-domain-object-auditing)
 
+---
+
 - [ ] **Enable auditing on an Exchange object**
   - Confirm if this is needed in your environment. If yes, follow steps in below documentation.
   - MDI PS cmdlet: `Set-MDIConfiguration -Mode Domain -Configuration ConfigurationContainerAuditing`
@@ -430,6 +451,8 @@ _Figure 7: MDI Sensor - Security Event Log Access (after)_
     - Check *Write all properties*
     - Select OK
   - [Configure auditing on the configuration container | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/configure-windows-event-collection#configure-auditing-on-the-configuration-container)
+
+---
 
 - [ ] **Enable auditing on an ADFS object**
   - Confirm if this is needed in your environment. If yes, follow steps in below documentation.
