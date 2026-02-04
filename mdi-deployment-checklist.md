@@ -533,9 +533,10 @@ net group "Enterprise Admins" /domain
     - It could be possible that no alert is being triggered as some activities have a learning period of 7-30 days. 
 
 ## Data exfiltration over SMB
+- **ATTENTION:** This simulation will potentially trigger the automatic attack disruption feature (if you have MDE deployed in the environment)! This means that the domain admin you're using below will be disabled and contained automatically!
 - [ ] Download PsTools
 - [ ] Run on Windows Client OS joined to domain
-- [ ] Open command prompt (run as domain admin) 
+- [ ] Open command prompt (run as **domain admin**) 
 - [ ] Enter following commands
 ```
 PSEexec -s -i \\DC1.domain.local cmd.exe
@@ -552,4 +553,4 @@ copy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopyX\windows\ntds\ntds.dit C:\te
 ```
 - [ ] **Result**
   - NTDS.dit should be copied to temporary folder.
-  - Multiple alerts should be created in Defender XDR portal, e.g. Suspicious Service launched (PSEXESVC), Suspicious credentials dump from NTDS.dit (if MDE is deployed on server)
+  - Multiple alerts should be created in Defender XDR portal, e.g. Suspicious Service launched (PSEXESVC), Suspicious credentials dump from NTDS.dit (if MDE is deployed on server), Lateral movement, Hands-on keyboard attack
