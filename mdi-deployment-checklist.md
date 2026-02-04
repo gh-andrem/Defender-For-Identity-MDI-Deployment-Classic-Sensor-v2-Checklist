@@ -360,7 +360,7 @@ net stop certsvc && net start certsvc`
     - Logon/Logoff > Audit Logon
   - [Configure auditing on Microsoft Entra Connect | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/configure-windows-event-collection#configure-auditing-on-microsoft-entra-connect)
 
-- [ ]  **Configure read permissions for the Entra Connect (ADSync) database**
+- [ ] **Configure read permissions for the Entra Connect (ADSync) database**
   - The following steps only apply if the Entra Connect database is hosted on an external SQL server instance.
   - Grant the sensor permissions to the SQL database by following the steps at [Configure permissions for the Microsoft Entra Connect (ADSync) database | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/active-directory-federation-services#configure-permissions-for-the-microsoft-entra-connect-adsync-database)
 
@@ -370,7 +370,7 @@ The MDI Sensor (AATPSensor) service needs access to the Windows Security event l
 
 Assess if the Security event log is being forwarded by checking the following policy.
 
-- [ ]  **Configure log access**
+- [ ] **Configure log access**
   - Computer Configuration > Administrative Templates > Windows Components > Event Log Service > Security > **Configure log access** or **Configure log access (legacy)**
   - **Default**: Not enabled
   - If the policy **is enabled** run command `wevtutil gl security` (as admin) and backup the output (see figure 6).
@@ -390,255 +390,114 @@ _Figure 7: MDI Sensor - Security Event Log Access (after)_
 
 ### Checklist – Auditing
 
- 	Confirm if object auditing was already configured in your domain. If not, make changes
-
-according to documentation (see links below for each section).
-
- 	**Configure object auditing**** (Event ID 4662)**
-
-MDI PS cmdlet
-
-Set-MDIConfiguration -Mode Domain -Configuration DomainObjectAuditing
-
-- 
-
-To manually configure follow the next steps:
-
-Active Directory Users and Computers console > Select Domain > Properties > Security > Advanced > Auditing > Add
-
-Create one entry for
-
-- Descendant User objects
-
-- Descendant Group Objects
-
-- Descendant Computer Objects
-
-- Descendant msDS-GroupManagedServiceAccount Objects
-
-- Descendant msDS-ManagedServiceAccount Objects
-
-- Descendant msDS-DelegatedManagedServiceAccount Objects (if applicable)
-
-Steps to repeat for each entry
-
-- Principal: Everyone
-
-- Type: Success
-
-- Applies to: [see list above]
-
-- *Clear all* (all the way at the bottom)
-
-- Check *Full Control*
-
-- Uncheck *List contents*
-
-- Uncheck *Read all properties*
-
-- Uncheck *Read permissions*
-
-Link: 
-
- 	**Enable auditing on an Exchange object**
-
-Confirm if this is needed in your environment. If yes, follow steps in below documentation.
-
-MDI PS cmdlet
-
-Set-MDIConfiguration -Mode Domain -Configuration ConfigurationContainerAuditing
-
-To manually configure follow the next steps:
-
-Open ADSI Edit (ADSIEdit.msc)
-
-Action > Connect to
-
-Connection Settings (under Select a well known Naming Context) > Select Configuration > OK
-
-Expand Configuration container > Right-click Configuration node > Properties
-
-Security > Advanced > Auditing > Add
-
-Make following selections
-
-- Principal: Everyone
-
-- Type: All
-
-- This object and all descendant objects
-
-- Clear all (all the way at the bottom)
-
-- Check Write all properties
-
-- Select OK
-
-Link: 
-
- 	**Enable auditing on an ADFS object**
-
-Confirm if this is needed in your environment. If yes, follow steps in below documentation.
-
-MDI PS cmdlet
-
-Set-MDIConfiguration -Mode Domain -Configuration AdfsAuditing
-
-To manually configure follow the next steps:
-
-Active Directory Users and Computers console > Your Domain > Program Data > Microsoft > Select ADFS > Properties > Security > Advanced > Auditing > Add
-
-Make following selections
-
-- Principal: Everyone
-
-- Type: All
-
-- Applies to: This object and all descendant objects
-
-- Clear all (all the way at the bottom)
-
-- Check Read all properties
-
-- Check Write all properties
-
-Link: 
-
-## MDI Sensor
-
-### Checklist – Prerequisites - MDI Sensor
-
- 		Download MDI sensor package from Defender XDR portal
-
-***Settings > Identities > Sensor******s ******> Add Sensor***
-
- 		Collect access key 
-
- 		Add gMSA(s) as directory service account to Defender XDR portal
-
-Link: 
-
- 		Does the server need a proxy to communicate to MDI URLs? If so, do you have the proxy
-
-information handy?
-
-Install MDI Sensor
+- [ ] Confirm if object auditing was already configured in your domain. If not, make changes according to documentation (see links below for each section).
+- [ ] **Configure object auditing** (Event ID 4662)
+  - MDI PS cmdlet: `Set-MDIConfiguration -Mode Domain -Configuration DomainObjectAuditing`
+  - To manually configure follow the next steps:
+  - Active Directory Users and Computers console > Select Domain > Properties > Security > Advanced > Auditing > Add
+  - Create one entry for
+    - Descendant User objects
+    - Descendant Group Objects
+    - Descendant Computer Objects
+    - Descendant msDS-GroupManagedServiceAccount Objects
+    - Descendant msDS-ManagedServiceAccount Objects
+    - Descendant msDS-DelegatedManagedServiceAccount Objects (if applicable)
+  - Steps to repeat for each entry
+    - Principal: Everyone
+    - Type: Success
+    - Applies to: [see list above]
+    - *Clear all* (all the way at the bottom) - scroll down and up using the scrollbar on the right. This menu behaves sluggish/wonky.
+    - Check *Full Control*
+    - Uncheck *List contents*
+    - Uncheck *Read all properties*
+    - Uncheck *Read permissions*
+  - [Configure domain object auditing | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/configure-windows-event-collection#configure-domain-object-auditing)
+
+- [ ] **Enable auditing on an Exchange object**
+  - Confirm if this is needed in your environment. If yes, follow steps in below documentation.
+  - MDI PS cmdlet: `Set-MDIConfiguration -Mode Domain -Configuration ConfigurationContainerAuditing`
+  - To manually configure follow the next steps:
+  - Open ADSI Edit (ADSIEdit.msc)
+  - Action > Connect to
+  - Connection Settings (under Select a well known Naming Context) > Select Configuration > OK
+  - Expand Configuration container > Right-click Configuration node > Properties
+  - Security > Advanced > Auditing > Add
+  - Make following selections
+    - Principal: Everyone
+    - Type: All
+    - This object and all descendant objects
+    - *Clear all* (all the way at the bottom) - scroll down and up using the scrollbar on the right. This menu behaves sluggish/wonky.
+    - Check *Write all properties*
+    - Select OK
+  - [Configure auditing on the configuration container | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/configure-windows-event-collection#configure-auditing-on-the-configuration-container)
+
+- [ ] **Enable auditing on an ADFS object**
+  - Confirm if this is needed in your environment. If yes, follow steps in below documentation.
+  - MDI PS cmdlet: `Set-MDIConfiguration -Mode Domain -Configuration AdfsAuditing`
+  - To manually configure follow the next steps:
+  - Active Directory Users and Computers console > Your Domain > Program Data > Microsoft > Select ADFS > Properties > Security > Advanced > Auditing > Add
+  - Make following selections
+    - Principal: Everyone
+    - Type: All
+    - Applies to: This object and all descendant objects
+    - *Clear all* (all the way at the bottom) - scroll down and up using the scrollbar on the right. This menu behaves sluggish/wonky.
+    - Check *Read all properties*
+    - Check *Write all properties*
+  - [Configure auditing on AD FS | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/configure-windows-event-collection#configure-auditing-on-ad-fs)
+
+# MDI Sensor
+## Checklist – MDI Instance
+- [ ] Download MDI sensor package from Defender XDR portal - **Settings > Identities > Sensors > Add Sensor**
+- [ ] Collect access key - this key will only be used for initial communication between sensor and MDI instance
+- [ ] Add gMSA(s) as directory service account to Defender XDR portal
+  - [Configure a Directory service account in Microsoft Defender XDR | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/create-directory-service-account-gmsa#configure-a-directory-service-account-in-microsoft-defender-xdr)
+- [ ] Does the server need a proxy to communicate to MDI URLs? If so, do you have the proxy information handy?
 
 ## Checklist – Install MDI Sensor
-
-Run installation packages on all servers where MDI needs to be installed, either silently or via GUI, depending on which proxy option is needed.
+- [ ] Run installation packages on all servers where MDI needs to be installed, either silently or via GUI, depending on which proxy option is needed.
 
 ### Without proxy
-
- 		Silent
-
-"Azure ATP Sensor Setup.exe" /quiet NetFrameworkCommandLineArguments="/q"
-
-AccessKey="ACCESS KEY"
-
- 		GUI
-
-		Run installation package and manually enter access key
+- Silent: `"Azure ATP Sensor Setup.exe" /quiet NetFrameworkCommandLineArguments="/q" AccessKey="ACCESS KEY"`
+- GUI: Run installation package and manually enter access key
 
 ### With non-authenticated proxy
-
- 	Silent
-
-"Azure ATP Sensor Setup.exe" /quiet ProxyUrl="http://IPorURL:PORT"
-
-NetFrameworkCommandLineArguments="/q" AccessKey="ACCESS KEY"
-
- 		GUI
-
-"Azure ATP Sensor Setup.exe" ProxyUrl="http://IPorURL:PORT"
+- Silent: `"Azure ATP Sensor Setup.exe" /quiet ProxyUrl="http://IPorURL:PORT" NetFrameworkCommandLineArguments="/q" AccessKey="ACCESS KEY"`
+- GUI: `"Azure ATP Sensor Setup.exe" ProxyUrl="http://IPorURL:PORT"`
 
 ### With authenticated proxy
-
- 	Silent
-
-"Azure ATP Sensor Setup.exe" /quiet ProxyUrl="http://IPorURL:PORT"
-
-NetFrameworkCommandLineArguments="/q" ProxyUserName="DOMAIN\USER" 
-
-ProxyUserPassword="PASSWORD" AccessKey="ACCESS KEY"
-
-*	*GUI
-
-"Azure ATP Sensor Setup.exe" ProxyUrl="http://IPorURL:PORT" ProxyUserName="DOMAIN\USER" ProxyUserPassword="PASSWORD"
+- Silent: `"Azure ATP Sensor Setup.exe" /quiet ProxyUrl="http://IPorURL:PORT" NetFrameworkCommandLineArguments="/q" ProxyUserName="DOMAIN\USER" ProxyUserPassword="PASSWORD" AccessKey="ACCESS KEY"`
+- GUI: `"Azure ATP Sensor Setup.exe" ProxyUrl="http://IPorURL:PORT" ProxyUserName="DOMAIN\USER" ProxyUserPassword="PASSWORD"`
 
 ## Checklist – Confirm MDI Sensor Install
+- [ ] Confirm that *AATPSensor* and *AATPSensorUpdater* services are running
+  - PowerShell: `Get-Service AATPSensor, AATPSensorUpdater`
+- [ ] Run MDI configuration checker tool (as **administrator**)
+  - Disclaimer
+    - The tool might display the wrong information for non-English Windows Server OS, e.g. Object Auditing or Exchange Auditing is displayed as not configured. If you are using a non-English OS version please confirm that the policies have been configured properly and that the sensor health status (see checkbox below) in the Defender XDR portal does not show any issues.
+  - [Test-MdiReadiness.ps1 | GitHub](https://github.com/microsoft/Microsoft-Defender-for-Identity/tree/main/Test-MdiReadiness)
+  - **ATTENTION**
+  - This tool will query all DCs, ADCS and Entra Connect servers in your domain. It might create incidents/alerts in the Defender XDR or other EDR solutions. Some features will get blocked if Attack Surface Reduction rules (ASR) are in block mode.
+  - You might need to set the PowerShell execution policy to unrestricted to run this script. Please confirm if it is allowed to change the execution policy in your environment.
+  - Run with PowerShell:
+    - `.\Test-MdiReadiness.ps1` OR
+    - `.\Test-MdiReadiness.ps1 -domain YOUR-DOMAIN` (e.g. abc.domain.local)
+- [ ] If Test-MDIReadiness HTML shows **False** for Advanced Auditing and/or PowerSettings it could be that remotely accessing this information is blocked.
+  - Please manually execute the following commands on one server to confirm that the settings have been made.
+  - **AdvancedAuditing**: `auditpol /get /category:*`
+  - **PowerSettings**: `powercfg -list` (* means active)
+  - It might help to analyze the JSON file that the Test-MDIReadiness tool creates to further troubleshoot.
+- [ ] If you installed MDI sensors on ADFS, ADCS and/or Entra Connect servers you will need to add Domain Controllers (FQDN) to the sensors manually to resolve computer and user objects in other domains in the forest.
+  - [View and configure sensor settings | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/configure-sensor-settings#view-and-configure-sensor-settings)
+- [ ] Check sensor health status in Defender XDR
+  - Defender XDR portal > Settings > Identities > Health issues
+  - There should be no issues for either Global or Sensor Health issues
+  - Sign up for sensor health issue notifications
+    - Defender XDR portal > System > Settings > Identities > Health issues notifications
+- [ ] (If necessary) Adjust Defender XDR Email Notifications
+  - Defender XDR portal > System > Settings > Microsoft Defender XDR > Email notifications
+  - Add the Defender for Identity source to receive email notifications for MDI incidents
 
- 	Confirm that *AATPSensor* and *AATPSensorUpdater* services are running
-
-	PowerShell: Get-Service AATPSensor, AATPSensorUpdater
-
-	Run both MDI configuration checker tools (as **administrator**)
-
-Disclaimer
-
-- Both tools might display the wrong information for non-English Windows Server OS, e.g. Object Auditing or Exchange Auditing is displayed as not configured. If you are using a non-English OS version please confirm that the policies have been configured properly and that the sensor health status (see checkbox below) in the Defender XDR portal does not show any issues.
-
-ATTENTION
-
-This tool will query all DCs and ADCS in your domain. It might create incidents/alerts in the Defender XDR portal. Some features will get blocked if Attack Surface Reduction rules (ASR) are in block mode.
-
-You might need to set the PowerShell execution policy to unrestricted to run this script. Please confirm if it is allowed to change the execution policy in your environment.
-
-Run with PowerShell:
-
-.\Test-MdiReadiness.ps1 OR
-
-.\Test-MdiReadiness.ps1 -domain YOUR-DOMAIN (e.g. abc.domain.local)
-
- 	If Test-MDIReadiness HTML shows **False** for Advanced Auditing and/or PowerSettings
-
-it could be that remotely accessing this information is blocked.
-
-- Please manually execute the following commands on one server to confirm that the settings have been made.
-
-- **AdvancedAuditing**: auditpol /get /category:*
-
-- **PowerSettings**: powercfg -list (* means active)
-
-- It might help to analyze the JSON file that the Test-MDIReadiness tool creates to further troubleshoot.
-
- 	If you installed MDI sensors on ADFS, ADCS and/or Entra Connect servers you will need to
-
-add Domain Controllers (FQDN) to the sensors manually to resolve computer and user
-
-objects in other domains in the forest.
-
-	Check sensor health status in Defender XDR portal
-
-Defender XDR portal > Settings > Identities > Health issues
-
-There should be no issues for either Global or Sensor Health issues
-
-- 
-
-	(If necessary) Adjust Defender XDR Email Notifications
-
-Defender XDR portal > Settings > Microsoft Defender XDR > Email notifications
-
-Add the Defender for Identity source to receive email notifications for MDI incidents
-
-Steps for replacing a server/sensor
-
-Ensure that new computer object (where MDI will be installed) is added to the AD security group so it can retrieve the gMSA’s password
-
-- A restart might be necessary
-
-Allow URL (https://INSTANCE-NAMEsensorapi.atp.azure.com)
-
-Add computer object to required GPOs (starting with section 2.4.1.2)
-
-For ADFS, ADCS and Entra Connect sensors, ensure that the additional steps outlined in 2.4.1.4, 2.4.1.5 or 2.4.1.6 have been completed
-
-Add Domain Controllers (FQDN) to the ADFS, Entra Connect and ADCS sensors manually (Defender XDR > System > Settings > Identities > Sensors > Select sensor > Manage Sensor)
-
-Delete the decommissioned/old sensor from the MDI portal
-
-Simulate alerts
+# Simulate alerts
 
 ## Network Mapping Reconnaissance (DNS)
 
