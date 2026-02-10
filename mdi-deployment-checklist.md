@@ -73,12 +73,12 @@ Update-Module DefenderForIdentity
 
 - [ ] Run MDI sizing tool on one domain controller in (each) domain for 24 hours
   - [Download MDI Sizing Tool](https://aka.ms/mdi/sizingtool)
-  - Command to run: TriSizingTool.exe -UseCurrent=ComputerDomain (optional: -AlsoEnumerateAD)
+  - Command to run: `TriSizingTool.exe -UseCurrent=ComputerDomain` (optional: -AlsoEnumerateAD)
 - [ ] Check “Azure ATP Summary” tab in created Excel spreadsheet and increase CPU, RAM and/or HDD for each server accordingly
 - [ ] Is the latest version of Windows Server OS installed?
 - [ ] Set **Power Option** to **High Performance** on all servers where MDI will be deployed
   - **GUI**: Start > Control Panel > Power Options > Select a power plan > *Select* Change settings that are currently unavailable > *Choose* High Performance
-  - **Command** (as admin): powercfg.exe /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+  - **Command** (as admin): `powercfg.exe /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c`
   - **GPO**: Policies > Administrative Templates > System > Power Management > Select an active power plan > High Performance
   - **MDI PS** cmdlet: `Set-MDIConfiguration -Mode Domain -Configuration ProcessorPerformance`
 - [ ] Verify that servers have at least 10GB of disk space for MDI sensor
@@ -101,7 +101,7 @@ Update-Module DefenderForIdentity
 	- Note configuration – either Automatic configuration/AutoConfigURL or Proxy Server/ProxyServer
 	- Link: 
 - [ ] Either use proxy or allow URL from first step on all servers where MDI sensor will be deployed https://WORKSPACE-NAMEsensorapi.atp.azure.com
-- [ ] Load URL https://WORKSPACE-NAMEsensorapi.atp.azure.com/tri/sensor/api/ping
+- [ ] Load URL `https://WORKSPACE-NAMEsensorapi.atp.azure.com/tri/sensor/api/ping`
   - In browser: Should show string with numbers, e.g. “2.240.18316.65180”
   - PowerShell/cmd:
     - `Invoke-Webrequest -UseBasicParsing https://INSTANCE-NAMEsensorapi.atp.azure.com/tri/sensor/api/ping #-Proxy http://PROXYURL` or
@@ -114,8 +114,8 @@ Update-Module DefenderForIdentity
 
 ## Directory Service Account
 
-- [ ] Check if KDS root key exists: *Get-KDSRootKey*
-- [ ] If not, create via Add-KdsRootKey -EffectiveImmediately and wait 24 hours for synchronization between domain controllers
+- [ ] Check if KDS root key exists: `Get-KDSRootKey`
+- [ ] If not, create via `Add-KdsRootKey -EffectiveImmediately` and wait 24 hours for synchronization between domain controllers
 - [ ] Create a universal AD security group and add all domain controllers (and ADFS/ADCS/Entra Connect) as members
   - AD FS: Add only federation servers (web application proxy servers [WAP] not required) and dedicated SQL server (if AD FS database does not run on local AD FS server)
   - AD CS: Add only online ADCS servers (not required for offline servers)
@@ -183,7 +183,7 @@ Get-ADServiceAccount gmsa-mdi -Properties * | fl DNSHostName, SamAccountName, Ke
 ## Event Logging
 ### Checklist – Event Logging
 
-- [ ] Run gpresult /h C:\temp\mdi-gpo-result.html (adjust path and file name accordingly) OR use rsop.msc (run both as administrator) on DC and other server (ADFS, ADCS, Entra Connect – if applicable). 
+- [ ] Run `gpresult /h C:\temp\mdi-gpo-result.html` (adjust path and file name accordingly) OR use rsop.msc (run both as administrator) on DC and other server (ADFS, ADCS, Entra Connect – if applicable). 
 
 Use created HTML with GPOs (or evaluate RSOP) to determine if the following policies are already configured through existing GPOs.
 - If policies are configured, confirm if settings are set correctly. If not, set them according to the documentation (see links below for each section),
@@ -229,8 +229,8 @@ _Figure 4: Summary of CrashOnAuditFail options_
   - If enabled, add gMSA(s) (created above) to policy
   - **ATTENTION**
     - User Rights Assignment GPO will overwrite locally made changes, e.g. Entra Connect connector account will be overwritten by GPO.
-      - Get current Entra Connect connector account via Get-ADSyncADConnectorAccount and add to GPO targeting Entra Connect servers. NT SERVICE\ALL SERVICES covers NT SERVICE\ADSync if the Microsoft Azure AD Sync service is running with that account.
-    - Ideally NT SERVICE\ALL SERVICES should be added to GPO, if not already added. Simply type NT SERVICE\ALL SERVICES in the user and group names box (don’t click browse!)
+      - Get current Entra Connect connector account via `Get-ADSyncADConnectorAccount` and add to GPO targeting Entra Connect servers. `NT SERVICE\ALL SERVICES` covers `NT SERVICE\ADSync` if the Microsoft Azure AD Sync service is running with that account.
+    - Ideally `NT SERVICE\ALL SERVICES` should be added to GPO, if not already added. Simply type `NT SERVICE\ALL SERVICES` in the user and group names box (don’t click browse!)
     - Consider configuring this setting on ADFS, ADCS and Entra Connect via local group policy (“edit group policy”).
   - [Log on as a service | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/deploy/create-directory-service-account-gmsa#verify-that-the-gmsa-account-has-the-required-rights)
 
@@ -287,7 +287,7 @@ Set-AdfsProperties -AuditLevel Verbose
 - [ ] **Configure read permissions for the AD FS database**
   - Applies read (db_datareader) permissions for the gMSA(s)
   - Apply the steps below on all AD FS servers in your environment since database permissions are not replicated across servers.
-  - If AD FS database is located on dedicated SQL server, add SQL server to AD security group that can access the gMSA (see ).
+  - If AD FS database is located on dedicated SQL server, add SQL server to AD security group that can access the gMSA.
   - To acquire SQL connection string (if not known already) to locate the name of the AD FS database open PowerShell
     - [Acquire the SQL database connection string | Microsoft Docs](https://learn.microsoft.com/en-us/windows-server/identity/ad-fs/troubleshooting/ad-fs-tshoot-sql#acquire-the-sql-database-connection-string)
 ```PowerShell
@@ -339,7 +339,7 @@ $SQLConnection.Close()
 - [ ] **Configure CA auditing (either via command line or GUI)**
   - Check if CA\AuditFilter value is already set to value 127 (or 7f): `Certutil -getreg CA\AuditFilter`
   - If value is not set to 127 check your ADCS database size as enabling `Start and Stop Active Directory Certificate Services` might cause restart delays
-    - Default path for the ADCS database (.edb): %SystemRoot%\System32\CertLog
+    - Default path for the ADCS database (.edb): `%SystemRoot%\System32\CertLog`
 
 ![image](images/img-5.png)
 
