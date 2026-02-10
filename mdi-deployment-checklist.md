@@ -76,7 +76,7 @@ Update-Module DefenderForIdentity
   - Command to run: TriSizingTool.exe -UseCurrent=ComputerDomain (optional: -AlsoEnumerateAD)
 - [ ] Check “Azure ATP Summary” tab in created Excel spreadsheet and increase CPU, RAM and/or HDD for each server accordingly
 - [ ] Is the latest version of Windows Server OS installed?
-- [ ] Set **Power Option** to **High Performance** **on all servers where MDI will be deployed
+- [ ] Set **Power Option** to **High Performance** on all servers where MDI will be deployed
   - **GUI**: Start > Control Panel > Power Options > Select a power plan > *Select* Change settings that are currently unavailable > *Choose* High Performance
   - **Command** (as admin): powercfg.exe /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
   - **GPO**: Policies > Administrative Templates > System > Power Management > Select an active power plan > High Performance
