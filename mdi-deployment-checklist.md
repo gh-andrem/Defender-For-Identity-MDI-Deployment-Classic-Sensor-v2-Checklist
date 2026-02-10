@@ -73,10 +73,10 @@ Update-Module DefenderForIdentity
 
 - [ ] Run MDI sizing tool on one domain controller in (each) domain for 24 hours
   - [Download MDI Sizing Tool](https://aka.ms/mdi/sizingtool)
-- [ ] Command to run: TriSizingTool.exe -UseCurrent=ComputerDomain (optional: -AlsoEnumerateAD)
+  - Command to run: TriSizingTool.exe -UseCurrent=ComputerDomain (optional: -AlsoEnumerateAD)
 - [ ] Check “Azure ATP Summary” tab in created Excel spreadsheet and increase CPU, RAM and/or HDD for each server accordingly
 - [ ] Is the latest version of Windows Server OS installed?
-- [ ] Set **Power Option** to **High Performance**** **on all servers where MDI will be deployed
+- [ ] Set **Power Option** to **High Performance** **on all servers where MDI will be deployed
   - **GUI**: Start > Control Panel > Power Options > Select a power plan > *Select* Change settings that are currently unavailable > *Choose* High Performance
   - **Command** (as admin): powercfg.exe /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
   - **GPO**: Policies > Administrative Templates > System > Power Management > Select an active power plan > High Performance
@@ -88,7 +88,7 @@ Update-Module DefenderForIdentity
 - [ ] If servers are virtualized ensure that memory is allocated to VMs at all times
   - [Plan capacity for Microsoft Defender for Identity deployment - Dynamic memory | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/prerequisites#dynamic-memory-requirements)
 - [ ] If servers are virtualized (**VMWare only**) disable TCP Segmentation Offload (TSO) for IPv4 May require **REBOOT** and causes brief **LOSS** of network connectivity
-  - `*Get-**NetAdapterAdvancedProperty** | Where-Object DisplayName -Match "^Large*"*`
+  - `Get-NetAdapterAdvancedProperty | Where-Object DisplayName -Match "^Large*"`
   - [VMware virtual machine sensor issue | Microsoft Docs](https://learn.microsoft.com/en-us/defender-for-identity/troubleshooting-known-issues#vmware-virtual-machine-sensor-issue)
 
 ## Network, Proxy and Ports
@@ -114,7 +114,7 @@ Update-Module DefenderForIdentity
 
 ## Directory Service Account
 
-- [ ] Check if KDS root key exists: *Get-**KDSRootKey*
+- [ ] Check if KDS root key exists: *Get-KDSRootKey*
 - [ ] If not, create via Add-KdsRootKey -EffectiveImmediately and wait 24 hours for synchronization between domain controllers
 - [ ] Create a universal AD security group and add all domain controllers (and ADFS/ADCS/Entra Connect) as members
   - AD FS: Add only federation servers (web application proxy servers [WAP] not required) and dedicated SQL server (if AD FS database does not run on local AD FS server)
@@ -169,8 +169,8 @@ dsacls "CN=Deleted Objects,$((Get-ADDomain).DistinguishedName)" /g "$((Get-ADDom
 
 ```PowerShell
 Import-Module ActiveDirectory
-Install-ADServiceAccount -Identity 'gmsa-mdi’
-Test-ADServiceAccount -Identity 'gmsa-mdi’ # Should return true
+Install-ADServiceAccount -Identity 'gmsa-mdi'
+Test-ADServiceAccount -Identity 'gmsa-mdi' # Should return true
 ```
 
 - [ ] Optional: See properties of gMSA
@@ -349,7 +349,7 @@ _Figure 5: Note for logging Start and Stop Active Directory Certificate Services
   - Commandline (as admin)
 ```
 certutil –setreg CA\AuditFilter 127
-net stop certsvc && net start certsvc`
+net stop certsvc && net start certsvc
 ```
 
   - GUI
